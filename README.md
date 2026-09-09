@@ -24,3 +24,6 @@ retrieval-to-VLM visual RAG; and production notes.
 
 Requires `transformers` from `main` (NeoMME was contributed 2026-08-31) and `sentence-transformers>=6.0.0`.
 Runs on a free Colab T4 in roughly 15–25 minutes.
+
+A one-page feature summary suitable for handing out is at
+[`notebooks/NeoMME_Tutorial_Features.md`](notebooks/NeoMME_Tutorial_Features.md).
