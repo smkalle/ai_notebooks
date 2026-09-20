@@ -1,0 +1,4 @@
+prototype/data/
+prototype/runs/
+__pycache__/
+*.pyc
