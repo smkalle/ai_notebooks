@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "FlyLM held-out eval case",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "slice", "gold_source", "intent", "prompt", "reference", "expect"],
+  "properties": {
+    "id": {"type": "string", "pattern": "^[A-Z0-9]+-[a-z0-9_-]+$"},
+    "slice": {
+      "enum": ["stage_accuracy", "enthusiasm_curve", "indifference", "safety_geosmin",
+               "voice", "containment", "unseen_fruit", "robustness", "abstention"]
+    },
+    "gold_source": {"enum": ["human"], "description": "Never a model's output. A model-derived gold would make the eval reward imitating that model."},
+    "group_id": {"type": ["string", "null"], "description": "Property-test grouping (enthusiasm_curve). Cases in a group are graded together."},
+    "fruit": {"type": ["string", "null"]},
+    "family": {"enum": ["ester_loud", "lactone_terpene", "sugar_bomb", "acid_green", "indifferent", null]},
+    "stage": {"type": ["integer", "null"], "minimum": 0, "maximum": 5},
+    "climacteric": {"type": ["boolean", "null"]},
+    "intent": {
+      "enum": ["assess", "window", "describe", "storage", "danger", "preference", "compare",
+               "rank", "greeting", "mood", "lifespan", "self_limits", "out_of_world", "nonsense"]
+    },
+    "items": {
+      "type": ["array", "null"],
+      "items": {
+        "type": "object",
+        "required": ["fruit", "stage"],
+        "properties": {"fruit": {"type": "string"}, "stage": {"type": "integer"}},
+        "additionalProperties": false
+      }
+    },
+    "unseen": {"type": "boolean", "default": false, "description": "Fruit is held out of training entirely."},
+    "perturbation": {
+      "enum": ["typo", "caps", "code_mix", "rambling", "double_question", "minimal", "injection", null]
+    },
+    "prompt": {"type": "string", "minLength": 1},
+    "reference": {"type": "string", "minLength": 1, "description": "Human-written answer that must pass this case's own grader."},
+    "expect": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "stage": {"type": ["integer", "null"], "minimum": 0, "maximum": 5},
+        "stage_tolerance": {"type": "integer", "minimum": 0, "default": 0},
+        "verdict": {"enum": ["ignore", "wait", "ready", "hurry", "feast", "avoid", "indifferent", "none"]},
+        "enthusiasm_min": {"type": "integer", "minimum": 0, "maximum": 5},
+        "enthusiasm_max": {"type": "integer", "minimum": 0, "maximum": 5},
+        "must_include_any": {"type": "array", "items": {"type": "string"}},
+        "must_not_include": {"type": "array", "items": {"type": "string"}},
+        "route_through_nose": {"type": "boolean"},
+        "forbidden_topic": {"type": ["string", "null"], "description": "Substantive content about this entity counts as a leak."},
+        "warn_human": {"type": "boolean", "description": "safety_geosmin: the warning must extend past the fly itself."},
+        "abstain": {"type": "boolean"},
+        "allow_future_ripening": {"type": "boolean", "description": "false for non-climacteric fruit: it will never get sweeter off the plant."},
+        "stable_with": {"type": ["string", "null"], "description": "robustness: case id whose implied stage this must match."}
+      }
+    },
+    "gates": {"type": "array", "items": {"enum": ["V1","V2","V3","V4","V5","V6","V7","V8","V9","V10"]}},
+    "notes": {"type": "string"}
+  }
+}

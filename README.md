@@ -6,6 +6,7 @@ Notebook tutorials.
 
 | Notebook | Topic | Colab |
 |---|---|---|
+| [`flylm/SPEC.md`](flylm/SPEC.md) | **FlyLM** — spec + frozen eval suite + runnable prototype for an eval-first fine-tune of a fruit-ripeness persona model | — |
 | [`notebooks/NeoMME_Complete_Tutorial.ipynb`](notebooks/NeoMME_Complete_Tutorial.ipynb) | **NeoMME** — H Company's single-tower, multimodal-native, multilingual encoder: architecture, masked LM, the patch pipeline, dense + late-interaction retrieval, index compression, fine-tuning, and visual RAG | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/smkalle/ai_notebooks/blob/main/notebooks/NeoMME_Complete_Tutorial.ipynb) |
 
 ### NeoMME tutorial
@@ -24,3 +25,32 @@ retrieval-to-VLM visual RAG; and production notes.
 
 Requires `transformers` from `main` (NeoMME was contributed 2026-08-31) and `sentence-transformers>=6.0.0`.
 Runs on a free Colab T4 in roughly 15–25 minutes.
+
+### FlyLM — eval-first fine-tuning spec
+
+A tiny language model with one sense and one judgment: *how far along is this fruit?*
+It doesn't know anything about the world, but it knows when your fruit is going bad.
+
+[`flylm/SPEC.md`](flylm/SPEC.md) specifies the notebook; [`flylm/evals/golden/`](flylm/evals/golden/)
+holds the 154 hand-authored held-out cases, frozen and hash-pinned; and
+[`flylm/prototype/`](flylm/prototype/) is the runnable half — ontology, voice contract,
+nine slice graders, seeded corpus generator, Claude judge, and the harness.
+
+The order is the argument. The held-out suite is authored and **validated against null,
+constant and oracle adapters before any training data exists**: an empty model must fail
+everything, a cheerful constant must fail safety, and the hand-written references must
+pass. A persona model trained on synthetic data will otherwise learn the generator, and a
+same-generator eval will report 97% for a model that is still a broken sensor.
+
+Three axes — six ripeness stages (green → turning → ripe → overripe → fermenting →
+mouldy), 24 trained fruits across five olfactory families plus 7 held out entirely, and
+14 intent templates. The fly's enthusiasm rises through fermentation and then falls off a
+cliff at geosmin, which is a real receptor and the correct food-safety opinion for a
+human too. Every row carries `fruit`, `stage` and `intent` as structured fields, so the
+same corpus is both the chat dataset and a labeled ripeness benchmark.
+
+```bash
+cd flylm/prototype
+python3 run_eval.py --adapter oracle      # 1.000 on all nine slices
+python3 -m unittest discover -s tests     # 27 tests
+```
