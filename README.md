@@ -6,7 +6,7 @@ Notebook tutorials.
 
 | Notebook | Topic | Colab |
 |---|---|---|
-| [`flylm/SPEC.md`](flylm/SPEC.md) | **FlyLM** — spec + frozen eval suite + runnable prototype for an eval-first fine-tune of a fruit-ripeness persona model | — |
+| [`notebooks/FlyLM_Ripeness_Persona_Finetune.ipynb`](notebooks/FlyLM_Ripeness_Persona_Finetune.ipynb) | **FlyLM** — eval-first fine-tuning of a fruit-ripeness persona model: held-out suite, nine slice graders, a configurable LLM judge, and a monitoring dashboard | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/smkalle/ai_notebooks/blob/main/notebooks/FlyLM_Ripeness_Persona_Finetune.ipynb) |
 | [`notebooks/NeoMME_Complete_Tutorial.ipynb`](notebooks/NeoMME_Complete_Tutorial.ipynb) | **NeoMME** — H Company's single-tower, multimodal-native, multilingual encoder: architecture, masked LM, the patch pipeline, dense + late-interaction retrieval, index compression, fine-tuning, and visual RAG | [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/smkalle/ai_notebooks/blob/main/notebooks/NeoMME_Complete_Tutorial.ipynb) |
 
 ### NeoMME tutorial
@@ -31,10 +31,13 @@ Runs on a free Colab T4 in roughly 15–25 minutes.
 A tiny language model with one sense and one judgment: *how far along is this fruit?*
 It doesn't know anything about the world, but it knows when your fruit is going bad.
 
-[`flylm/SPEC.md`](flylm/SPEC.md) specifies the notebook; [`flylm/evals/golden/`](flylm/evals/golden/)
-holds the 154 hand-authored held-out cases, frozen and hash-pinned; and
-[`flylm/prototype/`](flylm/prototype/) is the runnable half — ontology, voice contract,
-nine slice graders, seeded corpus generator, Claude judge, and the harness.
+[`notebooks/FlyLM_Ripeness_Persona_Finetune.ipynb`](notebooks/FlyLM_Ripeness_Persona_Finetune.ipynb)
+is the 15-section walkthrough — self-contained, ~2 minutes CPU-only, no dataset downloads
+and no API key. [`flylm/SPEC.md`](flylm/SPEC.md) is the spec behind it;
+[`flylm/evals/golden/`](flylm/evals/golden/) holds the 154 hand-authored held-out cases,
+frozen and hash-pinned; [`flylm/prototype/`](flylm/prototype/) is the library — ontology,
+voice contract, nine slice graders, seeded generator, provider-configurable judge,
+harness, deep-trace instrumentation and the chart module.
 
 The order is the argument. The held-out suite is authored and **validated against null,
 constant and oracle adapters before any training data exists**: an empty model must fail
@@ -48,6 +51,15 @@ mouldy), 24 trained fruits across five olfactory families plus 7 held out entire
 cliff at geosmin, which is a real receptor and the correct food-safety opinion for a
 human too. Every row carries `fruit`, `stage` and `intent` as structured fields, so the
 same corpus is both the chat dataset and a labeled ripeness benchmark.
+
+The **LLM judge is provider-configurable** — Claude, Gemini, OpenAI, a local Ollama
+model, or `offline` (a no-network stand-in, so the notebook runs with no credentials).
+The rubric, JSON schema, untrusted-input wrapper, known-negative probes and calibration
+gate are shared by every provider; only the transport differs, and model ids are passed
+through verbatim.
+
+Set `TRACE_LEVEL = "deep"` in the notebook's config cell to see every lexicon hit and
+every rule decision behind every verdict.
 
 ```bash
 cd flylm/prototype

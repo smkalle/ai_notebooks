@@ -1,9 +1,15 @@
 # FlyLM prototype
 
 The runnable half of [`../SPEC.md`](../SPEC.md): the ontology, the voice contract, the
-graders, the seeded generator, the Claude judge, and the harness that ties them together.
+graders, the seeded generator, the LLM judge, the harness, deep-trace instrumentation and
+the monitoring charts.
 
-Pure standard library. No API key needed for anything below except the judge.
+The guided tour of all of it is
+[`../../notebooks/FlyLM_Ripeness_Persona_Finetune.ipynb`](../../notebooks/FlyLM_Ripeness_Persona_Finetune.ipynb)
+— 15 sections, ~2 minutes CPU-only, no dataset downloads, no API key.
+
+Standard library only, except `matplotlib` + `numpy` for `charts.py`. No API key is
+needed for anything below.
 
 ```bash
 cd flylm/prototype
@@ -88,13 +94,14 @@ Stated plainly so the spec's budget is not mistaken for shipped code:
   reserved `@h` pool is one clause per slot. Until the inventory grows, the 154-case
   golden set is the suite that matters and its noise floor (±8 points at one rep) is the
   honest one to quote.
-- **No training code.** Tracks A/B/C in SPEC §8 are the notebook's job. `adapters.HFAdapter`
+- **No training code runs.** Tracks A/B/C in SPEC §8 are specified and the notebook's
+  §13 carries a complete LoRA recipe, but it is guarded and skips without a GPU. `adapters.HFAdapter`
   is the seam they plug into, and its generation config is pinned there so every track is
   scored under identical sampling.
-- **The judge has never been run.** `flylm/judge.py` is complete and import-safe without
-  credentials, but no call has been made and it has not been calibrated. Until
-  `judge.calibrate()` clears ~0.90 agreement against human labels, its scores should not
-  steer a decision.
+- **The judge has never been called for real.** `flylm/judge.py` is complete and
+  import-safe without credentials, but no live call has been made and it has not been
+  calibrated. Until `judge.calibrate()` clears ~0.90 agreement against human labels, its
+  scores should not steer a decision.
 
 ## Layout
 
@@ -103,10 +110,46 @@ flylm/ontology.py    three axes, families, stages, intents, the phrase lexicons
 flylm/voice.py       V1-V10, deterministic, zero cost
 flylm/graders.py     the tier-1 classifier and one grader per slice
 flylm/generate.py    the seeded generator and its six hard invariants
-flylm/judge.py       the Claude judge: schema, untrusted wrapper, batch path, calibration
+flylm/judge.py       the judge: schema, untrusted wrapper, providers, probes, calibration
 flylm/adapters.py    null / constant / oracle / hf
 flylm/harness.py     run, record, aggregate, Wilson intervals, threshold gates
+flylm/trace.py       four-level trace instrumentation (off/quiet/normal/deep)
+flylm/charts.py      the monitoring dashboard, on a validated palette
 ```
+
+## The judge is provider-configurable
+
+```python
+JudgeConfig(provider="offline")                          # no network - the default
+JudgeConfig(provider="claude", model="claude-opus-5")
+JudgeConfig(provider="gemini", model="<gemini model id>")
+JudgeConfig(provider="openai", model="<openai model id>")
+JudgeConfig(provider="ollama", model="<local model tag>")
+```
+
+The rubric, JSON schema, untrusted-input wrapper, known-negative probes and calibration
+gate are provider-independent; only the transport differs. Model ids are passed through
+verbatim and never rewritten, because provider model names change faster than this code
+does. Two caveats worth reading before trusting a number:
+
+- Only the **Claude** transport was written against first-party SDK documentation, and
+  only **offline** is exercised here. Gemini, OpenAI and Ollama are best-effort adapters;
+  a wrong model id surfaces as that provider's own error and nothing falls back silently.
+- **`offline` is a stand-in, not a judge.** It reuses the tier-1 classifier, so by
+  construction it cannot resolve the rows tier 1 already abstained on — it marks them
+  `unresolved`. Do not report offline numbers as judged numbers.
+
+`python3 -m flylm.judge` prints which providers this machine can reach and the cost
+estimate per scored track.
+
+## Charts
+
+`charts.py` ships the four monitoring views (slice pass rates with Wilson intervals, the
+gate board, the stage confusion matrix, the enthusiasm curves) plus corpus distributions
+and grader tiering. The palette is validated rather than chosen — categorical slots 1-3
+clear every hard gate under all-pairs in both light and dark mode — and every chart has a
+`table=True` companion that prints the same numbers, which is both the documented relief
+for the light-mode sub-3:1 slot and the only data-inspection path a static PNG has.
 
 `runs/` and `data/` are generated and git-ignored. Everything in them is reproducible
 from a seed plus the golden hash.

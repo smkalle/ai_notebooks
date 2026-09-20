@@ -549,9 +549,18 @@ before spending on the judge.
 
 ### 7.2 The judge
 
-Model `claude-opus-5`, `thinking: {type: "adaptive"}`, structured output via
-`client.messages.parse` with a Pydantic schema so the parse is deterministic and never a
-regex over prose:
+**The judge is provider-configurable.** The rubric, the JSON schema, the untrusted-input
+wrapper, the known-negative probes and the calibration gate are provider-independent;
+only the transport differs (`offline` / `claude` / `gemini` / `openai` / `ollama`), and
+model ids are passed through verbatim because provider model names change faster than
+this spec does. Only the Claude transport was written against first-party SDK
+documentation and only `offline` is exercised in-repo; `offline` reuses the tier-1
+classifier and therefore cannot resolve what tier 1 abstained on — it marks those rows
+`unresolved` rather than scoring them.
+
+The reference transport is `claude-opus-5`, `thinking: {type: "adaptive"}`, structured
+output via `client.messages.parse` with a Pydantic schema so the parse is deterministic
+and never a regex over prose:
 
 ```python
 from pydantic import BaseModel, Field
@@ -747,8 +756,11 @@ regression and cannot resolve a 0.5-point one.
 
 ## 10. Notebook plan
 
-`notebooks/FlyLM_Ripeness_Persona_Finetune.ipynb`, ~20 sections, runs end to end on a
-free Colab T4 in roughly 40–60 minutes, no dataset downloads.
+**Built:** [`notebooks/FlyLM_Ripeness_Persona_Finetune.ipynb`](../notebooks/FlyLM_Ripeness_Persona_Finetune.ipynb)
+— 15 sections, 46 cells, executed end to end on CPU in ~2 minutes with no dataset
+downloads and no API key. The table below was the plan; the shipped notebook merges a few
+sections and adds a configurable-judge section and a monitoring dashboard. §13's training
+cells are guarded and skip without a GPU.
 
 | § | section | produces |
 |---|---|---|
@@ -813,16 +825,21 @@ flylm/
     run_eval.py                        CLI: score an adapter against the suite
     make_dataset.py                    CLI: generate a split
     verify_holdout.py                  CLI: the five disjointness checks
+      trace.py                         four-level trace instrumentation
+      charts.py                        the monitoring dashboard, validated palette
     tests/test_graders.py              known-good and known-bad per grader
     README.md                          how to run it
+notebooks/
+  FlyLM_Ripeness_Persona_Finetune.ipynb   the executed walkthrough
 ```
 
 ### Implementation status
 
 Built and reproducible: the ontology, the voice contract, all nine slice graders, the
 tier-1 classifier, the seeded generator with its six invariants, the five disjointness
-checks, the harness with Wilson intervals, the three validation adapters, the judge
-module, and 27 unit tests.
+checks, the harness with Wilson intervals, the three validation adapters, the
+provider-configurable judge module, the trace and chart modules, 27 unit tests, and the
+executed notebook.
 
 Not built, and not to be mistaken for built:
 
